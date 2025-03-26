@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Import Google Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+</head>
+
+<body>
+    <main class="main-container">
+        <header class="input-container">
+            <input type="text" class="city-input" placeholder="Search City">
+            <button class="search-btn">
+                <span class="material-symbols-outlined">
+                    search
+                </span>
+            </button>
+        </header>
+
+        <section class="weather-info" style="display: none;">
+            <div class="location-date-container">
+                <div class="location">
+                    <span class="material-symbols-outlined">
+                        location_on
+                    </span>
+                    <h4 class="country-txt">Jakarta</h4>
+                </div>
+                <h5 class="current-date-txt regular-txt">Wed, 07 Aug</h5>
+            </div>
+
+            <div class="weather-summary-container">
+
+                <img src="" class="weather-summary-img">
+                <div class="weather-summary-info">
+                    <label class="toggle-switch">
+                        <input id="unit-slider" type="checkbox" />
+                        <span class="slider"></span>
+                        <span id="slider-txt-farenheit">F°</span>
+                        <span id="slider-txt-celcius">C°</span>
+                    </label>
+                    <h1 class="temp-txt"></h1>
+                    <h3 class="condition-txt regular-txt"></h3>
+                </div>
+            </div>
+
+            <div class="weather-conditions-container">
+                <div class="condition-item">
+                    <span class="material-symbols-outlined">
+                        water_drop
+                    </span>
+                    <div class="condition-info">
+                        <h5 class="regular-txt">Humidity</h5>
+                        <h5 class="humidity-value-txt">55%</h5>
+                    </div>
+                </div>
+
+                <div class="condition-item">
+                    <span class="material-symbols-outlined">
+                        air
+                    </span>
+                    <div class="condition-info">
+                        <h5 class="regular-txt">Wind Speed</h5>
+                        <h5 class="wind-value-txt">20 mph</h5>
+                    </div>
+                </div>
+            </div>
+
+            <div class="forecast-items-container">
+            </div>
+
+        </section>
+
+        <section class="search-city section-message">
+            <img src="assets/message/search-city.png" alt="">
+            <div>
+                <h1>Search City</h1>
+                <h4 class="regular-txt">
+                    Find out the weather conditions of the city
+                </h4>
+            </div>
+        </section>
+
+        <section class="not-found section-message" style="display: none;">
+            <img src="assets/message/not-found.png" alt="">
+            <div>
+                <h1>Search City</h1>
+                <h4 class="regular-txt">
+                    Find out the weather conditions of the city
+                </h4>
+            </div>
+        </section>
+    </main>
+
+    <template id="forecast-item-template">
+        <div class="forecast-item">
+            <h5 class="forecast-item-date regular-txt" data-template-date></h5>
+            <img src="" class="forecast-item-img" data-template-img>
+            <h5 class="forecast-item-temp" data-template-temp></h5>
+        </div>
+    </template>
+
+</body>
+
+</html>
