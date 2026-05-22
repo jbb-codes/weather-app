@@ -94,14 +94,6 @@ function getWeatherIcon(id) {
             : id <= 800
               ? "clear.svg"
               : "clouds.svg";
-
-  // if (id <= 232) return "thunderstorm.svg";
-  // if (id <= 321) return "drizzle.svg";
-  // if (id <= 531) return "rain.svg";
-  // if (id <= 622) return "snow.svg";
-  // if (id <= 781) return "atmosphere.svg";
-  // if (id <= 800) return "clear.svg";
-  // else return "clouds.svg";
 }
 
 function getCurrentDate() {
@@ -116,30 +108,37 @@ function getCurrentDate() {
 }
 
 async function updateWeatherInfo(city, unitType) {
-  const weatherData = await getFetchData("weather", city, unitType);
-  if (weatherData.cod != 200) {
-    showDisplaySection(notFoundSection);
-    return;
+  setLoading(true);
+  try {
+    const weatherData = await getFetchData("weather", city, unitType);
+    if (weatherData.cod != 200) {
+      showNotFound("City not found — check the spelling and try again");
+      return;
+    }
+
+    const {
+      name: country,
+      main: { humidity, temp },
+      weather: [{ id, main }],
+      wind: { speed },
+    } = weatherData;
+
+    countryTxt.textContent = country;
+    tempTxt.textContent = Math.round(temp) + " " + unitTempSymbol;
+    conditionTxt.textContent = main;
+    humidityValueTxt.textContent = humidity + "%";
+    windValueTxt.textContent = Math.round(speed) + " " + unitWindType;
+
+    currentDateTxt.textContent = getCurrentDate();
+    weatherSummaryImg.src = `assets/weather/${getWeatherIcon(id)}`;
+
+    await updateForecastInfo(city, unitType);
+    showDisplaySection(weatherInfoSection);
+  } catch {
+    showNotFound("Something went wrong — check your connection and try again");
+  } finally {
+    setLoading(false);
   }
-
-  const {
-    name: country,
-    main: { humidity, temp },
-    weather: [{ id, main }],
-    wind: { speed },
-  } = weatherData;
-
-  countryTxt.textContent = country;
-  tempTxt.textContent = Math.round(temp) + " " + unitTempSymbol;
-  conditionTxt.textContent = main;
-  humidityValueTxt.textContent = humidity + "%";
-  windValueTxt.textContent = Math.round(speed) + " " + unitWindType;
-
-  currentDateTxt.textContent = getCurrentDate();
-  weatherSummaryImg.src = `assets/weather/${getWeatherIcon(id)}`;
-
-  await updateForecastInfo(city, unitType);
-  showDisplaySection(weatherInfoSection);
 }
 
 async function updateForecastInfo(city, unitType) {
