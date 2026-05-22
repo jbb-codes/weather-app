@@ -152,6 +152,13 @@ body::before {
   background: rgba(255, 255, 255, 0.22);
 }
 
+/* ── Weather info ───────────────────────────────────────────────────────────── */
+
+.weather-info {
+  flex-direction: column;
+  gap: 20px;
+}
+
 /* ── Weather hero ───────────────────────────────────────────────────────────── */
 
 .weather-hero {
