@@ -1,191 +1,328 @@
-const cityInput = document.querySelector(".city-input");
-const searchBtn = document.querySelector(".search-btn");
+import {
+  getWeatherIcon,
+  getWeatherGradient,
+  getWindDirection,
+  getAQILabel,
+  getAQIColor,
+  formatSunTime,
+  formatHourlyTime,
+  formatVisibility,
+  getDailyForecasts,
+  getTodayHourly,
+} from "./utils.js";
+
+// ── DOM references ───────────────────────────────────────────────────────────
+
+const cityInput = document.querySelector(".search-bar__input");
+const searchBtn = document.querySelector(".search-bar__btn--search");
+const geoBtn = document.querySelector(".search-bar__btn--geo");
+const recentSearchesEl = document.querySelector(".recent-searches");
 
 const sections = document.querySelectorAll("section");
 const notFoundSection = document.querySelector(".not-found");
 const notFoundMsgTxt = document.querySelector(".not-found__message");
-const searchCitySection = document.querySelector(".search-city");
 const weatherInfoSection = document.querySelector(".weather-info");
 const loadingSection = document.querySelector(".loading");
 
-const countryTxt = document.querySelector(".country-txt");
-const tempTxt = document.querySelector(".temp-txt");
-const conditionTxt = document.querySelector(".condition-txt");
+const cityTxt = document.querySelector(".weather-hero__city");
+const dateTxt = document.querySelector(".weather-hero__date");
+
+const weatherMainIcon = document.querySelector(".weather-main__icon");
+const tempTxt = document.querySelector(".weather-main__temp");
+const feelsLikeTxt = document.querySelector(".weather-main__feels-like");
+const highLowTxt = document.querySelector(".weather-main__high-low");
+const conditionTxt = document.querySelector(".weather-main__condition");
+
+const unitSlider = document.querySelector("#unit-slider");
 const humidityValueTxt = document.querySelector(".humidity-value-txt");
 const windValueTxt = document.querySelector(".wind-value-txt");
-const weatherSummaryImg = document.querySelector(".weather-summary-img");
-const currentDateTxt = document.querySelector(".current-date-txt");
-const unitTypeSlider = document.querySelector("#unit-slider");
+const pressureValueTxt = document.querySelector(".pressure-value-txt");
+const visibilityValueTxt = document.querySelector(".visibility-value-txt");
+const sunriseValueTxt = document.querySelector(".sunrise-value-txt");
+const sunsetValueTxt = document.querySelector(".sunset-value-txt");
+
+const aqiLabel = document.querySelector(".aqi__label");
+const aqiFill = document.querySelector(".aqi__fill");
+
+const hourlyList = document.querySelector(".hourly-forecast__list");
+const dailyList = document.querySelector(".daily-forecast__list");
+
+const hourlyItemTemplate = document.querySelector("#hourly-item-template");
 const forecastItemTemplate = document.querySelector("#forecast-item-template");
-const forecastItemsContainer = document.querySelector(
-  ".forecast-items-container",
-);
+
+const card = document.querySelector(".card");
+
+// ── State ────────────────────────────────────────────────────────────────────
 
 const apiKey = window.WEATHER_APP_CONFIG?.apiKey;
 let unitType = "imperial";
-let selectedCity;
 let unitTempSymbol = "°F";
-let unitWindType = "mph";
+let unitWindLabel = "mph";
+let selectedCity = null;
 
-searchBtn.addEventListener("click", () => {
-  if (cityInput.value.trim() != "") {
-    selectedCity = cityInput.value;
-    updateWeatherInfo(cityInput.value, unitType);
-    cityInput.value = "";
-    cityInput.blur();
-  }
-});
+// ── Recent searches (localStorage) ──────────────────────────────────────────
 
-cityInput.addEventListener("keypress", (e) => {
-  if (e.key == "Enter" && cityInput.value != "") {
-    selectedCity = cityInput.value;
-    updateWeatherInfo(cityInput.value, unitType);
-    cityInput.value = "";
-    cityInput.blur();
+function loadRecentSearches() {
+  try {
+    return JSON.parse(localStorage.getItem("recentSearches") ?? "[]");
+  } catch {
+    return [];
   }
-});
+}
 
-unitTypeSlider.addEventListener("click", () => {
-  if (unitType === "imperial") {
-    unitType = "metric";
-    unitTempSymbol = "°C";
-    unitWindType = "m/s";
-    updateWeatherInfo(selectedCity, unitType);
-  } else {
-    unitType = "imperial";
-    unitTempSymbol = "°F";
-    unitWindType = "mph";
-    updateWeatherInfo(selectedCity, unitType);
-  }
-});
+function saveRecentSearch(city) {
+  const recent = loadRecentSearches().filter(
+    (c) => c.toLowerCase() !== city.toLowerCase(),
+  );
+  localStorage.setItem(
+    "recentSearches",
+    JSON.stringify([city, ...recent].slice(0, 3)),
+  );
+}
+
+function renderRecentSearches() {
+  const recent = loadRecentSearches();
+  recentSearchesEl.innerHTML = "";
+  recent.forEach((city) => {
+    const chip = document.createElement("button");
+    chip.className = "recent-searches__chip";
+    chip.textContent = city;
+    chip.addEventListener("click", () => {
+      selectedCity = city;
+      updateWeatherInfo(city, unitType);
+    });
+    recentSearchesEl.appendChild(chip);
+  });
+}
+
+// ── API ──────────────────────────────────────────────────────────────────────
+
+async function fetchWeather(endpoint, params) {
+  const query = new URLSearchParams({ ...params, appid: apiKey }).toString();
+  const url = `https://api.openweathermap.org/data/2.5/${endpoint}?${query}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`API ${response.status}`);
+  return response.json();
+}
+
+// ── UI helpers ───────────────────────────────────────────────────────────────
+
+function showSection(section) {
+  sections.forEach((s) => (s.style.display = "none"));
+  section.style.display = "flex";
+}
 
 function setLoading(isLoading) {
   cityInput.disabled = isLoading;
   searchBtn.disabled = isLoading;
-  if (isLoading) {
-    showDisplaySection(loadingSection);
-  }
+  geoBtn.disabled = isLoading;
+  if (isLoading) showSection(loadingSection);
 }
 
-function showNotFound(message) {
+function showError(message) {
   notFoundMsgTxt.textContent = message;
-  showDisplaySection(notFoundSection);
-}
-
-async function getFetchData(endpoint, city, unitType) {
-  const apiUrl = `https://api.openweathermap.org/data/2.5/${endpoint}?q=${city}&appid=${apiKey}&units=${unitType}`;
-
-  const response = await fetch(apiUrl);
-
-  return response.json();
-}
-
-function getWeatherIcon(id) {
-  return id <= 232
-    ? "thunderstorm.svg"
-    : id <= 321
-      ? "drizzle.svg"
-      : id <= 531
-        ? "rain.svg"
-        : id <= 622
-          ? "snow.svg"
-          : id <= 781
-            ? "atmosphere.svg"
-            : id <= 800
-              ? "clear.svg"
-              : "clouds.svg";
+  showSection(notFoundSection);
 }
 
 function getCurrentDate() {
-  const currentDate = new Date();
-
-  const options = {
+  return new Date().toLocaleDateString("en-US", {
     weekday: "short",
     day: "2-digit",
     month: "short",
-  };
-  return currentDate.toLocaleDateString("en-US", options);
+  });
 }
 
-async function updateWeatherInfo(city, unitType) {
+function getTodayDateStr() {
+  return new Date().toISOString().split("T")[0];
+}
+
+// ── Render helpers ───────────────────────────────────────────────────────────
+
+function renderCurrentWeather(data) {
+  const {
+    name,
+    main: { temp, feels_like, temp_max, temp_min, humidity, pressure },
+    weather: [{ id, description }],
+    wind: { speed, deg },
+    visibility,
+    sys: { sunrise, sunset },
+    timezone,
+    coord: { lat, lon },
+  } = data;
+
+  const now = Date.now() / 1000;
+  const isDaytime = now >= sunrise && now <= sunset;
+
+  cityTxt.textContent = name;
+  dateTxt.textContent = getCurrentDate();
+
+  weatherMainIcon.src = `assets/weather/${getWeatherIcon(id)}`;
+  tempTxt.textContent = `${Math.round(temp)} ${unitTempSymbol}`;
+  feelsLikeTxt.textContent = `Feels like ${Math.round(feels_like)} ${unitTempSymbol}`;
+  highLowTxt.textContent = `H: ${Math.round(temp_max)}°  L: ${Math.round(temp_min)}°`;
+  conditionTxt.textContent =
+    description.charAt(0).toUpperCase() + description.slice(1);
+
+  humidityValueTxt.textContent = `${humidity}%`;
+  windValueTxt.textContent = `${Math.round(speed)} ${unitWindLabel} ${getWindDirection(deg)}`;
+  pressureValueTxt.textContent = `${pressure} hPa`;
+  visibilityValueTxt.textContent = formatVisibility(visibility, unitType);
+  sunriseValueTxt.textContent = formatSunTime(sunrise, timezone);
+  sunsetValueTxt.textContent = formatSunTime(sunset, timezone);
+
+  card.style.setProperty("--card-gradient", getWeatherGradient(id, isDaytime));
+
+  return { lat, lon };
+}
+
+function renderAQI(aqiData) {
+  const aqi = aqiData?.list?.[0]?.main?.aqi;
+  if (!aqi) return;
+  const color = getAQIColor(aqi);
+  aqiLabel.textContent = getAQILabel(aqi);
+  aqiLabel.style.color = color;
+  aqiFill.parentElement.setAttribute("aria-valuenow", aqi);
+  aqiFill.style.width = `${(aqi / 5) * 100}%`;
+  aqiFill.style.backgroundColor = color;
+}
+
+function renderHourlyForecast(forecastData) {
+  const hourlyItems = getTodayHourly(forecastData.list, getTodayDateStr());
+  hourlyList.innerHTML = "";
+  hourlyItems.forEach(({ time, temp, iconId }) => {
+    const el = document.importNode(hourlyItemTemplate.content, true);
+    el.querySelector("[data-template-time]").textContent =
+      formatHourlyTime(time);
+    el.querySelector("[data-template-img]").src =
+      `assets/weather/${getWeatherIcon(iconId)}`;
+    el.querySelector("[data-template-temp]").textContent =
+      `${temp} ${unitTempSymbol}`;
+    hourlyList.appendChild(el);
+  });
+}
+
+function renderDailyForecast(forecastData) {
+  const days = getDailyForecasts(forecastData.list, getTodayDateStr());
+  dailyList.innerHTML = "";
+  days.forEach(({ date, high, low, iconId }) => {
+    const dayLabel = new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", {
+      weekday: "short",
+    });
+    const el = document.importNode(forecastItemTemplate.content, true);
+    el.querySelector("[data-template-date]").textContent = dayLabel;
+    el.querySelector("[data-template-img]").src =
+      `assets/weather/${getWeatherIcon(iconId)}`;
+    el.querySelector("[data-template-temp]").textContent =
+      `${high} ${unitTempSymbol}`;
+    el.querySelector("[data-template-range]").textContent = `L: ${low}°`;
+    dailyList.appendChild(el);
+  });
+}
+
+// ── Core update flow ─────────────────────────────────────────────────────────
+
+async function updateWeatherInfo(city, units) {
   setLoading(true);
   try {
-    const weatherData = await getFetchData("weather", city, unitType);
-    if (weatherData.cod != 200) {
-      showNotFound("City not found — check the spelling and try again");
-      return;
-    }
+    const weatherData = await fetchWeather("weather", { q: city, units });
+    const { lat, lon } = renderCurrentWeather(weatherData);
 
-    const {
-      name: country,
-      main: { humidity, temp },
-      weather: [{ id, main }],
-      wind: { speed },
-    } = weatherData;
+    const [forecastData, aqiData] = await Promise.all([
+      fetchWeather("forecast", { q: city, units }),
+      fetchWeather("air_pollution", { lat, lon }),
+    ]);
 
-    countryTxt.textContent = country;
-    tempTxt.textContent = Math.round(temp) + " " + unitTempSymbol;
-    conditionTxt.textContent = main;
-    humidityValueTxt.textContent = humidity + "%";
-    windValueTxt.textContent = Math.round(speed) + " " + unitWindType;
+    renderHourlyForecast(forecastData);
+    renderDailyForecast(forecastData);
+    renderAQI(aqiData);
 
-    currentDateTxt.textContent = getCurrentDate();
-    weatherSummaryImg.src = `assets/weather/${getWeatherIcon(id)}`;
+    saveRecentSearch(city);
+    renderRecentSearches();
 
-    await updateForecastInfo(city, unitType);
-    showDisplaySection(weatherInfoSection);
+    showSection(weatherInfoSection);
   } catch {
-    showNotFound("Something went wrong — check your connection and try again");
+    showError("Something went wrong — check your connection and try again");
   } finally {
     setLoading(false);
   }
 }
 
-async function updateForecastInfo(city, unitType) {
-  const forecastData = await getFetchData("forecast", city, unitType);
-  const timeTaken = "12:00:00";
-  const todaysDate = new Date().toISOString().split("T")[0];
+async function updateWeatherInfoByCoords(lat, lon, units) {
+  setLoading(true);
+  try {
+    const weatherData = await fetchWeather("weather", { lat, lon, units });
+    renderCurrentWeather(weatherData);
 
-  forecastItemsContainer.textContent = "";
+    const [forecastData, aqiData] = await Promise.all([
+      fetchWeather("forecast", { lat, lon, units }),
+      fetchWeather("air_pollution", { lat, lon }),
+    ]);
 
-  forecastData.list.forEach((date) => {
-    if (date.dt_txt.includes(timeTaken) && !date.dt_txt.includes(todaysDate)) {
-      updateForecastItems(date);
-    }
-  });
+    renderHourlyForecast(forecastData);
+    renderDailyForecast(forecastData);
+    renderAQI(aqiData);
+
+    selectedCity = weatherData.name;
+    saveRecentSearch(weatherData.name);
+    renderRecentSearches();
+
+    showSection(weatherInfoSection);
+  } catch {
+    showError("Something went wrong — check your connection and try again");
+  } finally {
+    setLoading(false);
+  }
 }
 
-function updateForecastItems(dateData) {
-  const {
-    dt_txt: date,
-    weather: [{ id }],
-    main: { temp },
-  } = dateData;
+// ── Event listeners ──────────────────────────────────────────────────────────
 
-  const dateTaken = new Date(date);
-  const dateOptions = {
-    weekday: "short",
-  };
+function handleSearch() {
+  const city = cityInput.value.trim();
+  if (!city) return;
+  selectedCity = city;
+  updateWeatherInfo(city, unitType);
+  cityInput.value = "";
+  cityInput.blur();
+}
 
-  const dateResult = dateTaken.toLocaleDateString("en-US", dateOptions);
+searchBtn.addEventListener("click", handleSearch);
 
-  const forecastElement = document.importNode(
-    forecastItemTemplate.content,
-    true,
+cityInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") handleSearch();
+});
+
+unitSlider.addEventListener("change", () => {
+  if (unitSlider.checked) {
+    unitType = "metric";
+    unitTempSymbol = "°C";
+    unitWindLabel = "m/s";
+  } else {
+    unitType = "imperial";
+    unitTempSymbol = "°F";
+    unitWindLabel = "mph";
+  }
+  if (selectedCity) updateWeatherInfo(selectedCity, unitType);
+});
+
+geoBtn.addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    showError("Geolocation is not supported by your browser");
+    return;
+  }
+  setLoading(true);
+  navigator.geolocation.getCurrentPosition(
+    ({ coords: { latitude, longitude } }) => {
+      updateWeatherInfoByCoords(latitude, longitude, unitType);
+    },
+    () => {
+      showError(
+        "Unable to determine your location — please allow location access",
+      );
+      setLoading(false);
+    },
   );
+});
 
-  forecastItemDate = forecastElement.querySelector("[data-template-date]");
-  forecastItemImg = forecastElement.querySelector("[data-template-img]");
-  forecastItemTemp = forecastElement.querySelector("[data-template-temp]");
+// ── Init ─────────────────────────────────────────────────────────────────────
 
-  forecastItemDate.textContent = dateResult;
-  forecastItemImg.src = `assets/weather/${getWeatherIcon(id)}`;
-  forecastItemTemp.textContent = Math.round(temp) + " " + unitTempSymbol;
-
-  forecastItemsContainer.appendChild(forecastElement);
-}
-
-function showDisplaySection(section) {
-  sections.forEach((section) => (section.style.display = "none"));
-  section.style.display = "flex";
-}
+renderRecentSearches();

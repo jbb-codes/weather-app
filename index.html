@@ -3,11 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Weather App</title>
     <script src="config.js" defer></script>
-    <script src="script.js" defer></script>
+    <script type="module" src="script.js"></script>
     <link rel="stylesheet" href="styles.css" />
-    <!-- Import Google Icons -->
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined"
       rel="stylesheet"
@@ -15,69 +14,135 @@
   </head>
 
   <body>
-    <main class="main-container">
-      <header class="input-container">
-        <input type="text" class="city-input" placeholder="Search City" />
-        <button class="search-btn">
-          <span class="material-symbols-outlined"> search </span>
+    <main class="card">
+      <!-- Search -->
+      <header class="search-bar">
+        <span class="material-symbols-outlined search-bar__icon">search</span>
+        <input
+          type="text"
+          class="search-bar__input"
+          placeholder="Search city..."
+          autocomplete="off"
+        />
+        <button
+          class="search-bar__btn search-bar__btn--search"
+          aria-label="Search"
+        >
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+        <button
+          class="search-bar__btn search-bar__btn--geo"
+          aria-label="Use my location"
+        >
+          <span class="material-symbols-outlined">my_location</span>
         </button>
       </header>
 
+      <!-- Recent searches -->
+      <div class="recent-searches" aria-label="Recent searches"></div>
+
+      <!-- Weather info -->
       <section class="weather-info" style="display: none">
-        <div class="location-date-container">
-          <div class="location">
-            <span class="material-symbols-outlined"> location_on </span>
-            <h4 class="country-txt">Jakarta</h4>
+        <!-- Location + date -->
+        <div class="weather-hero">
+          <div class="weather-hero__location">
+            <span class="material-symbols-outlined">location_on</span>
+            <h4 class="weather-hero__city"></h4>
           </div>
-          <h5 class="current-date-txt regular-txt">Wed, 07 Aug</h5>
+          <span class="weather-hero__date regular-txt"></span>
         </div>
 
-        <div class="weather-summary-container">
-          <img src="" class="weather-summary-img" />
-          <div class="weather-summary-info">
-            <label class="toggle-switch">
+        <!-- Main temp block -->
+        <div class="weather-main">
+          <img src="" class="weather-main__icon" alt="Weather condition" />
+          <div class="weather-main__info">
+            <label class="unit-toggle" title="Toggle °F / °C">
               <input id="unit-slider" type="checkbox" />
-              <span class="slider"></span>
-              <span id="slider-txt-farenheit">F°</span>
-              <span id="slider-txt-celcius">C°</span>
+              <span class="unit-toggle__track"></span>
+              <span class="unit-toggle__label unit-toggle__label--f">°F</span>
+              <span class="unit-toggle__label unit-toggle__label--c">°C</span>
             </label>
-            <h1 class="temp-txt"></h1>
-            <h3 class="condition-txt regular-txt"></h3>
+            <h1 class="weather-main__temp"></h1>
+            <p class="weather-main__feels-like regular-txt"></p>
+            <p class="weather-main__high-low regular-txt"></p>
+            <p class="weather-main__condition"></p>
           </div>
         </div>
 
-        <div class="weather-conditions-container">
-          <div class="condition-item">
-            <span class="material-symbols-outlined"> water_drop </span>
-            <div class="condition-info">
-              <h5 class="regular-txt">Humidity</h5>
-              <h5 class="humidity-value-txt">55%</h5>
-            </div>
+        <!-- Conditions grid -->
+        <div class="conditions-grid">
+          <div class="conditions-grid__item">
+            <span class="material-symbols-outlined">water_drop</span>
+            <span class="conditions-grid__label regular-txt">Humidity</span>
+            <span class="conditions-grid__value humidity-value-txt"></span>
           </div>
-
-          <div class="condition-item">
-            <span class="material-symbols-outlined"> air </span>
-            <div class="condition-info">
-              <h5 class="regular-txt">Wind Speed</h5>
-              <h5 class="wind-value-txt">20 mph</h5>
-            </div>
+          <div class="conditions-grid__item">
+            <span class="material-symbols-outlined">air</span>
+            <span class="conditions-grid__label regular-txt">Wind</span>
+            <span class="conditions-grid__value wind-value-txt"></span>
+          </div>
+          <div class="conditions-grid__item">
+            <span class="material-symbols-outlined">compress</span>
+            <span class="conditions-grid__label regular-txt">Pressure</span>
+            <span class="conditions-grid__value pressure-value-txt"></span>
+          </div>
+          <div class="conditions-grid__item">
+            <span class="material-symbols-outlined">visibility</span>
+            <span class="conditions-grid__label regular-txt">Visibility</span>
+            <span class="conditions-grid__value visibility-value-txt"></span>
+          </div>
+          <div class="conditions-grid__item">
+            <span class="material-symbols-outlined">wb_twilight</span>
+            <span class="conditions-grid__label regular-txt">Sunrise</span>
+            <span class="conditions-grid__value sunrise-value-txt"></span>
+          </div>
+          <div class="conditions-grid__item">
+            <span class="material-symbols-outlined">nights_stay</span>
+            <span class="conditions-grid__label regular-txt">Sunset</span>
+            <span class="conditions-grid__value sunset-value-txt"></span>
           </div>
         </div>
 
-        <div class="forecast-items-container"></div>
+        <!-- Air Quality -->
+        <div class="aqi">
+          <div class="aqi__header">
+            <span class="regular-txt">Air Quality</span>
+            <span class="aqi__label"></span>
+          </div>
+          <div
+            class="aqi__bar"
+            role="progressbar"
+            aria-valuemin="1"
+            aria-valuemax="5"
+          >
+            <div class="aqi__fill"></div>
+          </div>
+        </div>
+
+        <!-- Hourly forecast -->
+        <div class="hourly-forecast">
+          <h6 class="hourly-forecast__title regular-txt">Today</h6>
+          <div class="hourly-forecast__list"></div>
+        </div>
+
+        <!-- 5-day forecast -->
+        <div class="daily-forecast">
+          <h6 class="daily-forecast__title regular-txt">5-Day Forecast</h6>
+          <div class="daily-forecast__list"></div>
+        </div>
       </section>
 
-      <section class="search-city section-message">
+      <!-- Search prompt -->
+      <section class="section-message search-city">
         <img src="assets/message/search-city.png" alt="" />
         <div>
           <h1>Search City</h1>
-          <h4 class="regular-txt">
-            Find out the weather conditions of the city
-          </h4>
+          <h4 class="regular-txt">Find out the weather conditions of a city</h4>
         </div>
       </section>
 
-      <section class="not-found section-message" style="display: none">
+      <!-- Not found -->
+      <section class="section-message not-found" style="display: none">
         <img src="assets/message/not-found.png" alt="" />
         <div>
           <h1>Not Found</h1>
@@ -87,16 +152,31 @@
         </div>
       </section>
 
+      <!-- Loading -->
       <section class="loading" style="display: none">
         <div class="loading__spinner"></div>
       </section>
     </main>
 
+    <!-- Hourly item template -->
+    <template id="hourly-item-template">
+      <div class="hourly-item">
+        <span class="hourly-item__time regular-txt" data-template-time></span>
+        <img class="hourly-item__img" data-template-img alt="" />
+        <span class="hourly-item__temp" data-template-temp></span>
+      </div>
+    </template>
+
+    <!-- Daily forecast item template -->
     <template id="forecast-item-template">
       <div class="forecast-item">
-        <h5 class="forecast-item-date regular-txt" data-template-date></h5>
-        <img src="" class="forecast-item-img" data-template-img />
-        <h5 class="forecast-item-temp" data-template-temp></h5>
+        <span class="forecast-item__date regular-txt" data-template-date></span>
+        <img class="forecast-item__img" data-template-img alt="" />
+        <span class="forecast-item__temp" data-template-temp></span>
+        <span
+          class="forecast-item__range regular-txt"
+          data-template-range
+        ></span>
       </div>
     </template>
   </body>
