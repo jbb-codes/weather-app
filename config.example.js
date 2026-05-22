@@ -1,0 +1,3 @@
+window.WEATHER_APP_CONFIG = {
+  apiKey: "YOUR_OPENWEATHERMAP_API_KEY",
+};

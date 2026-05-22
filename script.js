@@ -3,8 +3,10 @@ const searchBtn = document.querySelector(".search-btn");
 
 const sections = document.querySelectorAll("section");
 const notFoundSection = document.querySelector(".not-found");
+const notFoundMsgTxt = document.querySelector(".not-found__message");
 const searchCitySection = document.querySelector(".search-city");
 const weatherInfoSection = document.querySelector(".weather-info");
+const loadingSection = document.querySelector(".loading");
 
 const countryTxt = document.querySelector(".country-txt");
 const tempTxt = document.querySelector(".temp-txt");
@@ -16,10 +18,10 @@ const currentDateTxt = document.querySelector(".current-date-txt");
 const unitTypeSlider = document.querySelector("#unit-slider");
 const forecastItemTemplate = document.querySelector("#forecast-item-template");
 const forecastItemsContainer = document.querySelector(
-  ".forecast-items-container"
+  ".forecast-items-container",
 );
 
-const apiKey = "3d8cbf24d46a6eac683399825e17b0fe";
+const apiKey = window.WEATHER_APP_CONFIG?.apiKey;
 let unitType = "imperial";
 let selectedCity;
 let unitTempSymbol = "°F";
@@ -28,7 +30,6 @@ let unitWindType = "mph";
 searchBtn.addEventListener("click", () => {
   if (cityInput.value.trim() != "") {
     selectedCity = cityInput.value;
-    console.log(selectedCity);
     updateWeatherInfo(cityInput.value, unitType);
     cityInput.value = "";
     cityInput.blur();
@@ -58,6 +59,19 @@ unitTypeSlider.addEventListener("click", () => {
   }
 });
 
+function setLoading(isLoading) {
+  cityInput.disabled = isLoading;
+  searchBtn.disabled = isLoading;
+  if (isLoading) {
+    showDisplaySection(loadingSection);
+  }
+}
+
+function showNotFound(message) {
+  notFoundMsgTxt.textContent = message;
+  showDisplaySection(notFoundSection);
+}
+
 async function getFetchData(endpoint, city, unitType) {
   const apiUrl = `https://api.openweathermap.org/data/2.5/${endpoint}?q=${city}&appid=${apiKey}&units=${unitType}`;
 
@@ -70,16 +84,16 @@ function getWeatherIcon(id) {
   return id <= 232
     ? "thunderstorm.svg"
     : id <= 321
-    ? "drizzle.svg"
-    : id <= 531
-    ? "rain.svg"
-    : id <= 622
-    ? "snow.svg"
-    : id <= 781
-    ? "atmosphere.svg"
-    : id <= 800
-    ? "clear.svg"
-    : "clouds.svg";
+      ? "drizzle.svg"
+      : id <= 531
+        ? "rain.svg"
+        : id <= 622
+          ? "snow.svg"
+          : id <= 781
+            ? "atmosphere.svg"
+            : id <= 800
+              ? "clear.svg"
+              : "clouds.svg";
 
   // if (id <= 232) return "thunderstorm.svg";
   // if (id <= 321) return "drizzle.svg";
@@ -158,7 +172,7 @@ function updateForecastItems(dateData) {
 
   const forecastElement = document.importNode(
     forecastItemTemplate.content,
-    true
+    true,
   );
 
   forecastItemDate = forecastElement.querySelector("[data-template-date]");
